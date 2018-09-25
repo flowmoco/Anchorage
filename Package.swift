@@ -4,9 +4,10 @@
 import PackageDescription
 
 let package = Package(
-    name: "anchorage",
+    name: "Anchorage",
     products: [
-        .executable(name: "anchor", targets: ["anchor"]),
+        .executable(name: "anchor", targets: ["Anchor"]),
+        .library(name: "Anchorage", targets: ["Anchorage"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -16,14 +17,14 @@ let package = Package(
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
-            name: "anchor",
-            dependencies: ["anchorage"]
+            name: "Anchor",
+            dependencies: ["Anchorage"]
         ),
         .target(
-            name: "anchorage",
+            name: "Anchorage",
             dependencies: []),
         .testTarget(
-            name: "anchorageTests",
-            dependencies: ["anchorage"])
+            name: "AnchorageTests",
+            dependencies: ["Anchorage"])
     ]
 )
