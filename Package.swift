@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "Anchorage",
     products: [
-        .executable(name: "anchor", targets: ["Anchor"]),
         .library(name: "Anchorage", targets: ["Anchorage"]),
+        .executable(name: "anchor", targets: ["Anchor"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
