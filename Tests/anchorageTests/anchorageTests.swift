@@ -1,7 +1,18 @@
 import XCTest
 import class Foundation.Bundle
+import Anchorage
 
 final class anchorageTests: XCTestCase {
+    
+    func testDefaultConfigURL() throws {
+        let fileManager = FileManager.default
+        let file = try defaultConfigFile(with: fileManager)
+        XCTAssertEqual("/Users/robwithhair/.anchorage/defaultConfig.json", file.path)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: try anchorageDirectory(with: fileManager).path), "Anchorage directory doesn't exist")
+        let config = try defaultConfig(with: fileManager)
+        XCTAssertEqual(config.driver.name, "amazonec2")
+    }
+    
     func testExample() throws {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
@@ -12,7 +23,7 @@ final class anchorageTests: XCTestCase {
             return
         }
 
-        let fooBinary = productsDirectory.appendingPathComponent("anchorage")
+        let fooBinary = productsDirectory.appendingPathComponent("anchor")
 
         let process = Process()
         process.executableURL = fooBinary
@@ -26,7 +37,7 @@ final class anchorageTests: XCTestCase {
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let output = String(data: data, encoding: .utf8)
 
-        XCTAssertEqual(output, "Hello, world!\n")
+        XCTAssertEqual(output, "Hello world\n")
     }
 
     /// Returns path to the built products directory.
