@@ -7,6 +7,7 @@ let package = Package(
     name: "Anchorage",
     products: [
         .library(name: "Anchorage", targets: ["Anchorage"]),
+        .library(name: "Anchorage-CLI", targets: ["Anchorage-CLI"]),
         .executable(name: "anchor", targets: ["Anchor"]),
     ],
     dependencies: [
@@ -19,8 +20,11 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "Anchor",
-            dependencies: ["Anchorage", "Utility"]
+            dependencies: ["Anchorage-CLI", "Utility"]
         ),
+        .target(
+            name: "Anchorage-CLI",
+            dependencies: ["Anchorage"]),
         .target(
             name: "Anchorage",
             dependencies: []),
