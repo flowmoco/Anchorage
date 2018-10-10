@@ -1,6 +1,6 @@
 import XCTest
 import class Foundation.Bundle
-import Anchorage
+@testable import Anchorage
 
 final class anchorageTests: XCTestCase {
     
@@ -11,6 +11,12 @@ final class anchorageTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: try anchorageDirectory(with: fileManager).path), "Anchorage directory doesn't exist")
         let config = try defaultConfig(with: fileManager)
         XCTAssertEqual(config.driver.name, "amazonec2")
+    }
+    
+    func testMachineNames() throws {
+        XCTAssertEqual( try valid(identifier: "flowmoco-cluster-123"), "flowmoco-cluster-123")
+        XCTAssertEqual( try valid(identifier: "Flowmoco-Cluster-123"), "Flowmoco-Cluster-123")
+        XCTAssertThrowsError( try valid(identifier: "test_not_work"))
     }
     
     func testExample() throws {

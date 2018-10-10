@@ -10,11 +10,6 @@ public struct Driver: Encodable, Decodable {
     
 }
 
-public struct DefaultConfig: Encodable, Decodable {
-    public var configVersion: Int
-    public var driver: Driver
-}
-
 public func jsonEncoder() -> JSONEncoder {
     let encoder = JSONEncoder()
     encoder.outputFormatting = .prettyPrinted
@@ -43,16 +38,16 @@ public func jsonDecoder() -> JSONDecoder {
     return decoder
 }
 
-public func save(defaultConfig: DefaultConfig, to url: URL) throws {
+public func save(defaultConfig: MachineConfig, to url: URL) throws {
     let data = try jsonEncoder().encode(defaultConfig)
     try data.write(to: url)
 }
 
-public func defaultConfig(from url: URL) throws -> DefaultConfig {
-    return try jsonDecoder().decode(DefaultConfig.self, from: Data(contentsOf: url))
+public func defaultConfig(from url: URL) throws -> MachineConfig {
+    return try jsonDecoder().decode(MachineConfig.self, from: Data(contentsOf: url))
 }
 
-public func defaultConfig(with fileManager: FileManager) throws -> DefaultConfig {
+public func defaultConfig(with fileManager: FileManager) throws -> MachineConfig {
     return try defaultConfig(from: try defaultConfigFile(with: fileManager))
 }
 
@@ -60,10 +55,12 @@ enum ConfigErrors: Error {
     case directoryAlreadyExistsat(path: String)
 }
 
-func initialDefaultConfig() -> DefaultConfig {
+func initialDefaultConfig() -> MachineConfig {
     let driver = Driver(name: "amazonec2", region: "eu-west-2", rootSize: 100, availabilityZone: "a", image: "ami-0d9ba70fd9e495233", user: "admin")
-    return DefaultConfig(configVersion: 1, driver: driver)
+    return MachineConfig(configVersion: 1, driver: driver, engineStorageDriver: "overlay2")
 }
+
+
 
 public func defaultConfigFile(with fileManager: FileManager) throws -> URL {
     let defaultConfigFileURL = try anchorageDirectory(with: fileManager).appendingPathComponent("defaultConfig.json")
