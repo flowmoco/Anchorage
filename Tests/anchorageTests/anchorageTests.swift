@@ -4,6 +4,36 @@ import class Foundation.Bundle
 
 final class anchorageTests: XCTestCase {
     
+    func testCreatingCluster() throws {
+        let fm = FileManager.default
+        let cluster = try Cluster(name: "test-cluster")
+        try cluster.save(using: fm)
+        _ = try Cluster.with(name: cluster.name, using: fm)
+        try cluster.delete(using: fm)
+    }
+    
+    func testRunningProcess() throws {
+        let path = FileManager.default.currentDirectoryPath
+        let ls = try process(commands: ["ls"], currentDirectory: URL(fileURLWithPath: path))
+        let res = try Anchorage.wait(forProcess: ls)
+        XCTAssertTrue(res.count > 3)
+        XCTAssertThrowsError(
+            try Anchorage.wait(forProcess:
+                try process(commands: ["dockerfds"], currentDirectory: URL(fileURLWithPath: path))
+            )
+        )
+        do {
+            let docker = try process(commands: ["docker", "wait"], currentDirectory: URL(fileURLWithPath: path))
+            let out = try Anchorage.wait(forProcess: docker)
+            print(out)
+            XCTFail()
+        } catch MachineErrors.processExitedWithStatus(let status, _, let reason, let output) {
+            XCTAssertEqual(status, 1)
+            XCTAssertEqual(reason, .exit)
+            XCTAssertTrue(output.contains("\"docker wait\" requires at least 1 argument."))
+        }
+    }
+    
     func testDefaultConfigURL() throws {
         let fileManager = FileManager.default
         let file = try defaultConfigFile(with: fileManager)

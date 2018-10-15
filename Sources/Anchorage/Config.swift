@@ -38,13 +38,17 @@ public func jsonDecoder() -> JSONDecoder {
     return decoder
 }
 
-public func save(defaultConfig: MachineConfig, to url: URL) throws {
-    let data = try jsonEncoder().encode(defaultConfig)
+public func save<T>(encodable: T, to url: URL) throws where T : Encodable {
+    let data = try jsonEncoder().encode(encodable)
     try data.write(to: url)
 }
 
+func retrieve<T>(decodableType: T.Type, from url: URL) throws -> T where T : Decodable {
+    return try jsonDecoder().decode(decodableType, from: Data(contentsOf: url))
+}
+
 public func defaultConfig(from url: URL) throws -> MachineConfig {
-    return try jsonDecoder().decode(MachineConfig.self, from: Data(contentsOf: url))
+    return try retrieve(decodableType: MachineConfig.self, from: url)
 }
 
 public func defaultConfig(with fileManager: FileManager) throws -> MachineConfig {
@@ -65,7 +69,7 @@ func initialDefaultConfig() -> MachineConfig {
 public func defaultConfigFile(with fileManager: FileManager) throws -> URL {
     let defaultConfigFileURL = try anchorageDirectory(with: fileManager).appendingPathComponent("defaultConfig.json")
     if !fileManager.fileExists(atPath: defaultConfigFileURL.path) {
-        try save(defaultConfig: initialDefaultConfig(), to: defaultConfigFileURL)
+        try save(encodable: initialDefaultConfig(), to: defaultConfigFileURL)
     }
     return defaultConfigFileURL
 }
