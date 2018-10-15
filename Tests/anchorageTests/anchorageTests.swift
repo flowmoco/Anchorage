@@ -67,15 +67,15 @@ final class anchorageTests: XCTestCase {
         process.executableURL = fooBinary
 
         let pipe = Pipe()
-        process.standardOutput = pipe
+        process.standardError = pipe
 
         try process.run()
         process.waitUntilExit()
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let output = String(data: data, encoding: .utf8)
-
-        XCTAssertEqual(output, "Hello world\n")
+        
+        XCTAssertTrue( output!.contains("command is used to manage a docker swarm cluster"))
     }
 
     /// Returns path to the built products directory.
