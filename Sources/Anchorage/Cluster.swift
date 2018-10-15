@@ -7,33 +7,33 @@
 
 import Foundation
 
-struct Cluster: Encodable, Decodable {
-    let name: String
+public struct Cluster: Encodable, Decodable {
+    public let name: String
     
-    init(name: String) throws {
+    public init(name: String) throws {
         self.name = try valid(identifier: name)
     }
     
-    static func list(using fileManager: FileManager) throws -> [String] {
+    public static func list(using fileManager: FileManager) throws -> [String] {
         let url = try clustersDirectory(using: fileManager)
         return try listConfigFolders(within: url, using: fileManager)
     }
     
-    static func with(name: String, using fileManager: FileManager) throws -> Cluster {
+    public static func with(name: String, using fileManager: FileManager) throws -> Cluster {
         let url = try clusterConfigFile(with: name, using: fileManager, create: false)
         return try retrieve(decodableType: Cluster.self, from: url)
     }
     
-    func save(using fileManager: FileManager) throws {
+    public func save(using fileManager: FileManager) throws {
         let url = try type(of: self).clusterConfigFile(with: name, using: fileManager, create: true)
         try Anchorage.save(encodable: self, to: url)
     }
     
-    func delete(using fileManager: FileManager) throws {
+    public func delete(using fileManager: FileManager) throws {
         try fileManager.removeItem(at: type(of: self).clusterDirectory(with: self.name, using: fileManager))
     }
     
-    static func exists(with name: String, using fileManager: FileManager) throws -> Bool {
+    public static func exists(with name: String, using fileManager: FileManager) throws -> Bool {
         return fileManager.fileExists(atPath: try clusterConfigFile(with: name, using: fileManager).path)
     }
     

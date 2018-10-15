@@ -18,17 +18,19 @@ final class Anchorage_CLITests: XCTestCase {
         let fooBinary = productsDirectory.appendingPathComponent("anchor")
 
         let process = Process()
+        process.arguments = ["cluster", "ls"]
         process.executableURL = fooBinary
 
         let pipe = Pipe()
-        process.standardError = pipe
+        process.standardOutput = pipe
 
         try process.run()
         process.waitUntilExit()
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let output = String(data: data, encoding: .utf8)
-        XCTAssertTrue( output!.contains("command is used to manage a docker swarm cluster"))
+        XCTAssertEqual( output!, "foo")
+        //XCTAssertTrue( output!.contains("command is used to manage a docker swarm cluster"))
     }
 
     /// Returns path to the built products directory.
