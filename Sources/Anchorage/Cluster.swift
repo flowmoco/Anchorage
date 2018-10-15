@@ -14,6 +14,11 @@ struct Cluster: Encodable, Decodable {
         self.name = try valid(identifier: name)
     }
     
+    static func list(using fileManager: FileManager) throws -> [String] {
+        let url = try clustersDirectory(using: fileManager)
+        return try listConfigFolders(within: url, using: fileManager)
+    }
+    
     static func with(name: String, using fileManager: FileManager) throws -> Cluster {
         let url = try clusterConfigFile(with: name, using: fileManager, create: false)
         return try retrieve(decodableType: Cluster.self, from: url)

@@ -99,3 +99,15 @@ public func createDirectory(at path: String, ifNotExistsWith fileManager: FileMa
         return URL(fileURLWithPath: path, isDirectory: true)
     }
 }
+
+public func listConfigFolders(within url: URL, using fileManager: FileManager) throws -> [String] {
+    let urls = try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants, .skipsPackageDescendants])
+    return try urls.compactMap { (url) -> String? in
+        let vals = try url.resourceValues(forKeys: [.isDirectoryKey])
+        if vals.isDirectory == true && fileManager.fileExists(atPath: url.appendingPathComponent("config").appendingPathExtension("json").path){
+            return url.lastPathComponent
+        } else {
+            return nil
+        }
+    }
+}

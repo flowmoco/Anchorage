@@ -9,6 +9,8 @@ final class anchorageTests: XCTestCase {
         let cluster = try Cluster(name: "test-cluster")
         try cluster.save(using: fm)
         _ = try Cluster.with(name: cluster.name, using: fm)
+        let list = try Cluster.list(using: fm)
+        XCTAssertTrue(list.contains("test-cluster"))
         try cluster.delete(using: fm)
     }
     
