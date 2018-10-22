@@ -25,14 +25,14 @@ final class anchorageTests: XCTestCase {
             )
         )
         do {
-            let docker = try process(commands: ["docker", "wait"], currentDirectory: URL(fileURLWithPath: path))
+            let docker = try process(commands: ["ls", "-D"], currentDirectory: URL(fileURLWithPath: path))
             let out = try Anchorage.wait(forProcess: docker)
             print(out)
             XCTFail()
         } catch MachineErrors.processExitedWithStatus(let status, _, let reason, let output) {
             XCTAssertEqual(status, 1)
             XCTAssertEqual(reason, .exit)
-            XCTAssertTrue(output.contains("\"docker wait\" requires at least 1 argument."))
+            XCTAssertTrue(output.contains("illegal option"))
         }
     }
     

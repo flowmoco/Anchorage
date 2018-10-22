@@ -10,6 +10,24 @@ import Anchorage
 import Utility
 import Basic
 
+func run(commands: [Command], for commandParser: ArgumentParser, giving result: ArgumentParser.Result) throws {
+    guard let subparser = result.subparser(commandParser) else {
+        commandParser.printUsage(on: stderrStream)
+        exit(127)
+    }
+    
+    let toRun = commands.compactMap { $0.name == subparser ? $0 : nil }
+    
+    if toRun.isEmpty {
+        commandParser.printUsage(on: stderrStream)
+        exit(127)
+    } else {
+        try toRun.forEach { (command) in
+            try command.run(result)
+        }
+    }
+}
+
 public func main(withArguments arguments: [String], commandName: String, overview: String) {
     
     let argumentParser = ArgumentParser(commandName: commandName, usage: "<COMMAND> [options]", overview: overview, seeAlso: nil)
@@ -19,22 +37,8 @@ public func main(withArguments arguments: [String], commandName: String, overvie
     do {
         
         let result = try argumentParser.parse(prepare(arguments: arguments))
+        try run(commands: commands, for: argumentParser, giving: result)
         
-        guard let subparser = result.subparser(argumentParser) else {
-            argumentParser.printUsage(on: stderrStream)
-            exit(1)
-        }
-        
-        let toRun = commands.compactMap { $0.name == subparser ? $0 : nil }
-        
-        if toRun.isEmpty {
-            argumentParser.printUsage(on: stderrStream)
-            exit(1)
-        } else {
-            try toRun.forEach { (command) in
-                try command.run(result)
-            }
-        }
     } catch let error as ArgumentParserError {
         handle(error: error)
     } catch let error {

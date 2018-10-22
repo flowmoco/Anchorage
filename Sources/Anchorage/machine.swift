@@ -69,8 +69,27 @@ func valid(identifier: String) throws -> String {
 }
 
 public func createMachine(withName name: String, andConfig config: MachineConfig) throws {
-    let name = try valid(identifier: name)
+//    let name = try valid(identifier: name)
     
+}
+
+public func createMachine(using arguments: [String], isUnitTest: Bool = false) throws -> String {
+    let commands = ["docker-machine", "create"] + arguments
+    if isUnitTest {
+        return commands.joined(separator: " ")
+    }
+    let p = try process(commands: commands, currentDirectory: currentDirectory(), environment: nil, qualityOfService: .userInitiated)
+    return try wait(forProcess: p)
+}
+
+func currentDirectory(using: FileManager = FileManager.default) -> URL {
+    return URL(fileURLWithPath: using.currentDirectoryPath)
+}
+
+public func createMachines(withNames names: [String], andConfig config: MachineConfig) throws {
+    try names.forEach { (name) in
+        try createMachine(withName: name, andConfig: config)
+    }
 }
 
 func process(commands: [String],

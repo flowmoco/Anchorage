@@ -33,6 +33,9 @@ let package = Package(
             dependencies: ["Anchorage"]),
         .testTarget(
             name: "Anchorage_CLITests",
-            dependencies: ["Anchorage_CLI"])
+            dependencies: ["Anchorage_CLI"]),
+        .testTarget(
+          name: "AnchorTests",
+          dependencies: ["Anchor"]),
     ]
 )
