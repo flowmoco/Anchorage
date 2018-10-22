@@ -45,6 +45,21 @@ public struct Cluster: Encodable, Decodable {
         return dir.appendingPathComponent("config").appendingPathExtension("json")
     }
     
+    static func defaultMachineConfigFile(with name: String, using fileManager: FileManager) throws -> URL? {
+        let configFileURL = try clusterDirectory(with: name, using: fileManager).appendingPathComponent(MachineConfig.defaultConfigFileName, isDirectory: false)
+        if fileManager.fileExists(atPath: configFileURL.path) {
+            return configFileURL
+        }
+        return nil
+    }
+    
+    public static func defaultMachineConfig(with name: String, using fileManager: FileManager) throws -> MachineConfig? {
+        guard let configFileURL = try Cluster.defaultMachineConfigFile(with: name, using: fileManager) else {
+            return nil
+        }
+        return try retrieve(decodableType: MachineConfig.self, from: configFileURL)
+    }
+    
     static func clusterDirectory(with name: String, using fileManager: FileManager) throws -> URL {
         return try clustersDirectory(using: fileManager).appendingPathComponent(name, isDirectory: true)
     }

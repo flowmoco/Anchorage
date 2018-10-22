@@ -39,10 +39,10 @@ final class anchorageTests: XCTestCase {
     func testDefaultConfigURL() throws {
         let fileManager = FileManager.default
         let file = try defaultConfigFile(with: fileManager)
-        XCTAssertEqual("/Users/robwithhair/.anchorage/defaultConfig.json", file.path)
+        XCTAssertEqual("/Users/robwithhair/.anchorage/defaultMachineConfig.json", file.path)
         XCTAssertTrue(FileManager.default.fileExists(atPath: try anchorageDirectory(with: fileManager).path), "Anchorage directory doesn't exist")
         let config = try defaultConfig(with: fileManager)
-        XCTAssertEqual(config.driver.name, "amazonec2")
+        XCTAssertEqual(config.driverName, "amazonec2")
     }
     
     func testMachineNames() throws {

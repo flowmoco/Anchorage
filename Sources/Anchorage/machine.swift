@@ -56,8 +56,11 @@ public typealias StorageDriver = String
 
 public struct MachineConfig: Encodable, Decodable {
     public var configVersion: Int
+    public var driverName: String
     public var driver: Driver
     public var engineStorageDriver: StorageDriver?
+    
+    static let defaultConfigFileName = "defaultMachineConfig.json"
 }
 
 func valid(identifier: String) throws -> String {
@@ -73,14 +76,14 @@ public func createMachine(withName name: String, andConfig config: MachineConfig
     
 }
 
-public func createMachine(using arguments: [String], isUnitTest: Bool = false) throws -> String {
-    let commands = ["docker-machine", "create"] + arguments
-    if isUnitTest {
-        return commands.joined(separator: " ")
-    }
-    let p = try process(commands: commands, currentDirectory: currentDirectory(), environment: nil, qualityOfService: .userInitiated)
-    return try wait(forProcess: p)
-}
+//public func createMachine(using arguments: [String], isUnitTest: Bool = false) throws -> String {
+//    let commands = ["docker-machine", "create"] + arguments
+//    if isUnitTest {
+//        return commands.joined(separator: " ")
+//    }
+//    let p = try process(commands: commands, currentDirectory: currentDirectory(), environment: nil, qualityOfService: .userInitiated)
+//    return try wait(forProcess: p)
+//}
 
 func currentDirectory(using: FileManager = FileManager.default) -> URL {
     return URL(fileURLWithPath: using.currentDirectoryPath)

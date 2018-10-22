@@ -10,3 +10,4 @@
 func prepare(arguments: [String]) -> [String] {
     return Array(arguments.dropFirst())
 }
+

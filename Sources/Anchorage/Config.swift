@@ -1,12 +1,15 @@
 import Foundation
 
 public struct Driver: Encodable, Decodable {
-    public var name: String
+    
     public var region: String
     public var rootSize: Int
     public var availabilityZone: String
     public var image: String
     public var user: String
+    
+    public var accessKey: String?
+    public var secretKey: String?
     
 }
 
@@ -60,14 +63,14 @@ enum ConfigErrors: Error {
 }
 
 func initialDefaultConfig() -> MachineConfig {
-    let driver = Driver(name: "amazonec2", region: "eu-west-2", rootSize: 100, availabilityZone: "a", image: "ami-0d9ba70fd9e495233", user: "admin")
-    return MachineConfig(configVersion: 1, driver: driver, engineStorageDriver: "overlay2")
+    let driver = Driver(region: "eu-west-2", rootSize: 100, availabilityZone: "a", image: "ami-0d9ba70fd9e495233", user: "admin", accessKey: nil, secretKey: nil)
+    return MachineConfig(configVersion: 1, driverName: "amazonec2", driver: driver, engineStorageDriver: "overlay2")
 }
 
 
 
 public func defaultConfigFile(with fileManager: FileManager) throws -> URL {
-    let defaultConfigFileURL = try anchorageDirectory(with: fileManager).appendingPathComponent("defaultConfig.json")
+    let defaultConfigFileURL = try anchorageDirectory(with: fileManager).appendingPathComponent(MachineConfig.defaultConfigFileName)
     if !fileManager.fileExists(atPath: defaultConfigFileURL.path) {
         try save(encodable: initialDefaultConfig(), to: defaultConfigFileURL)
     }

@@ -39,24 +39,6 @@ func namesArgument(for commandParser: ArgumentParser) -> PositionalArgument<[Str
     )
 }
 
-func remainingArguments(for commandParser: ArgumentParser) -> PositionalArgument<[String]> {
-    return commandParser.add(
-        positional: "docker-machine_arguments", kind: [String].self,
-        optional: false, strategy: .remaining,
-        usage: NSLocalizedString("Any arguments used by docker-machine", comment: "Name argument usage"),
-        completion: .none
-    )
-}
-
-func awsAccessArguments(for commandParser: ArgumentParser) -> (OptionArgument<String>, OptionArgument<String>){
-    let akUsage = NSLocalizedString("AWS Access Key [$AWS_ACCESS_KEY_ID]", comment: "Access key usage")
-    let sUsage = NSLocalizedString("AWS Secret Key [$AWS_SECRET_ACCESS_KEY]", comment: "Secret key usage")
-    return (
-        commandParser.add(option: "--amazonec2-access-key", shortName: "-k", kind: String.self, usage: akUsage, completion: ShellCompletion.none),
-        commandParser.add(option: "--amazonec2-secret-key", shortName: "-s", kind: String.self, usage: sUsage, completion: ShellCompletion.none)
-    )
-}
-
 func unitTest(for commandParser: ArgumentParser) -> OptionArgument<Bool>{
     let usage = NSLocalizedString("If specified will print commands which will be run rather than actually performing those commands", comment: "Unit test usage")
     return commandParser.add(option: "--unit-test", shortName: nil, kind: Bool.self, usage: usage, completion: ShellCompletion.values([(value: "true", description: "The value for a boolean true"), (value: "false", description: "The value for a boolean false")]))
@@ -150,15 +132,18 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
 //    let (awsAccessKey, awsSecretKey) = awsAccessArguments(for: commandParser)
 //    let machineName = namesArgument(for: commandParser)
     let unit = unitTest(for: commandParser)
-    let remainingArgumentsOptional = remainingArguments(for: commandParser)
+    let machineArgs = MachineArgument.arguments(for: commandParser)
     return Command(
         name: name,
         run: { (arguments) in
+            let fileManager = FileManager.default
             let isUnitTest = arguments.get(unit) ?? false
-            guard let remainingArguments = arguments.get(remainingArgumentsOptional) else {
-                throw ArgumentParserError.expectedArguments(commandParser, ["docker-machine_arguments"])
-            }
-            print( try createMachine(using: remainingArguments, isUnitTest: isUnitTest) )
+            let machineConfig = try config(for: machineArgs, using: fileManager, for: arguments)
+            
+            // create machine using Operation
+            createMachines(withNames: <#T##[String]#>, andConfig: machineConfig)
+            print( try createMachine(using: <#T##[String]#>))
+            print( try createMachine(using: machineConfig, isUnitTest: isUnitTest) )
 //            print(isUnitTest ? "true" : "false")
 //            let config = MachineConfig(
 //            createMachines(withNames: <#T##[String]#>, andConfig: <#T##MachineConfig#>)
