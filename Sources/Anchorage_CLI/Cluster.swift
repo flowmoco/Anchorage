@@ -49,24 +49,22 @@ public extension Cluster.Argument  {
         })
     }
     
-//    public static func set(machineArguments args: [MachineArgument: Any], on config: MachineConfig, for result: ArgumentParser.Result) throws -> MachineConfig {
-//        var outConfig = config
-//        args.forEach { (arg, value) in
-//            arg.set(machineArgument: value, on: &outConfig, for: result)
-//        }
-//        return outConfig
-//    }
-//
-//    func set(machineArgument arg: Any, on config: inout MachineConfig, for result: ArgumentParser.Result) {
-//        switch self {
-//        case .amazonec2AccessKey:
-//            guard let s = result.get(arg as! OptionArgument<String>) else { return }
-//            config.driver.accessKey = s
-//        case .amazonec2SecretKey:
-//            guard let s = result.get(arg as! OptionArgument<String>) else { return }
-//            config.driver.secretKey = s
-//        }
-//    }
+    public static func value<T>(for arg: Cluster.Argument, from args: [Cluster.Argument: Any], for result: ArgumentParser.Result) -> T? {
+        guard let parser = args[arg] else {
+            return nil
+        }
+        return arg.value(for: parser, for: result)
+    }
+
+    func value<T>(for arg: Any, for result: ArgumentParser.Result) -> T {
+        switch self {
+        case .swarmManagers, .swarmWorkers, .ceph:
+            guard let i = result.get(arg as! OptionArgument<T>) else {
+                return 0 as! T
+            }
+            return i
+        }
+    }
 }
 
 //func defaultConfig(forCluster cluster: String, using fileManager: FileManager) throws -> MachineConfig {
