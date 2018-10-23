@@ -8,7 +8,53 @@
 import Foundation
 
 public struct Cluster: Encodable, Decodable {
+    
+    public enum Argument: CaseIterable {
+        case swarmManagers
+        case swarmWorkers
+        case ceph
+        
+        public var argumentName: String {
+            switch self {
+            case .swarmManagers:
+                return "--swarm-managers"
+            case .swarmWorkers:
+                return "--swarm-workers"
+            case .ceph:
+                return "--ceph"
+            }
+        }
+        
+        public var argumentShortName: String?{
+            switch self {
+            case .swarmManagers:
+                return "-m"
+            case .swarmWorkers:
+                return "-w"
+            case .ceph:
+                return "-c"
+            }
+        }
+        
+        func argumentsList(for cluster: Cluster) -> [String]? {
+            switch self {
+            case .swarmManagers, .swarmWorkers, .ceph:
+                return nil
+            }
+        }
+        
+        static func argumentsList(for cluster: Cluster) -> [String] {
+            return self.allCases.reduce(into: [String](), { (result, arg) in
+                guard let s = arg.argumentsList(for: cluster) else { return }
+                result.append(contentsOf: s)
+            })
+        }
+    }
+    
     public let name: String
+    
+    public var managers: [String] = []
+    public var workers: [String] = []
     
     public init(name: String) throws {
         self.name = try valid(identifier: name)

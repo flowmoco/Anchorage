@@ -51,7 +51,10 @@ final class Anchorage_CLITests: XCTestCase {
     func testEmptyCreate() throws {
         let (output, error) = try run(commands:["cluster", "create"], exitCode: 1)
         XCTAssertEqual(output, "")
-        XCTAssertTrue(error.contains("expected arguments: names"), "Expected to recieve expected arguments string")
+        XCTAssertTrue(error.contains("Missing expected arguments"), "Expected to recieve expected arguments string")
+        Cluster.Argument.allCases.forEach { (arg) in
+            XCTAssertTrue(error.contains(arg.argumentName), "Expected to recieve usage for \(arg.argumentName)")
+        }
     }
     
     func testMachineCreateCommandHelp() throws {

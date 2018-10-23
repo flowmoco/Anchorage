@@ -39,6 +39,10 @@ func namesArgument(for commandParser: ArgumentParser) -> PositionalArgument<[Str
     )
 }
 
+func nameArgument(for commandParser: ArgumentParser) -> PositionalArgument<String> {
+    return commandParser.add(positional: "name", kind: String.self, optional: false, usage: NSLocalizedString("The name of the cluster", comment: "Name argument usage"), completion: .none)
+}
+
 func unitTest(for commandParser: ArgumentParser) -> OptionArgument<Bool>{
     let usage = NSLocalizedString("If specified will print commands which will be run rather than actually performing those commands", comment: "Unit test usage")
     return commandParser.add(option: "--unit-test", shortName: nil, kind: Bool.self, usage: usage, completion: ShellCompletion.values([(value: "true", description: "The value for a boolean true"), (value: "false", description: "The value for a boolean false")]))
@@ -50,10 +54,14 @@ func createClusterCommand(for argumentParser: ArgumentParser) -> Command {
         subparser: name,
         overview: NSLocalizedString("Create new clusters.", comment: "Create command overview")
     )
-    let clusterNames = namesArgument(for: commandParser)
+    let unit = unitTest(for: commandParser)
+    let clusterArgs = Cluster.Argument.arguments(for: commandParser)
+    let machineArgs = MachineArgument.arguments(for: commandParser)
+    let clusterNames = nameArgument(for: commandParser)
     return Command(
         name: name,
         run: { (arguments) in
+            
             // code
     })
 }

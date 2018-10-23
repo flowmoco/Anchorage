@@ -39,6 +39,13 @@ public func main(withArguments arguments: [String], commandName: String, overvie
         let result = try argumentParser.parse(prepare(arguments: arguments))
         try run(commands: commands, for: argumentParser, giving: result)
         
+    } catch ArgumentParserError.expectedArguments(let parser, let name) {
+        print(
+            errorMessage: "Missing expected arguments: [" +
+            name.joined(separator: ", ") + "]\n"
+        )
+        parser.printUsage(on: stderrStream)
+        exit(1)
     } catch let error as ArgumentParserError {
         handle(error: error)
     } catch let error {

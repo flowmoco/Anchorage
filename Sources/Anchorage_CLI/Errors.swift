@@ -38,3 +38,4 @@ public func handle(error: ArgumentParserError) {
     print(errorMessage: error.description + "\n")
     handle(error: error as Error)
 }
+
