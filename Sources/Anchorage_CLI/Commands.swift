@@ -122,6 +122,22 @@ func machineSubcommands(for argumentParser: ArgumentParser) -> [Command] {
     ]
 }
 
+func validMachine(names: [String]?, commandParser: ArgumentParser) throws -> [String] {
+    guard let machineNames = names, !machineNames.isEmpty else {
+        throw ArgumentParserError.expectedArguments(commandParser, ["names"])
+    }
+    return try machineNames.map({ (name) -> String in
+        return try valid(identifier: name)
+    })
+}
+
+func printOperationQueue() -> OperationQueue {
+    let printQueue = OperationQueue()
+    //printQueue.maxConcurrentOperationCount = 1
+    printQueue.name = "Output OperationQueue: printQueue"
+    return printQueue
+}
+
 func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
     let name = "create"
     let commandParser = argumentParser.add(
@@ -130,7 +146,7 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
                                     comment: "Machine command overview")
     )
 //    let (awsAccessKey, awsSecretKey) = awsAccessArguments(for: commandParser)
-//    let machineName = namesArgument(for: commandParser)
+    let machineNameArgs = namesArgument(for: commandParser)
     let unit = unitTest(for: commandParser)
     let machineArgs = MachineArgument.arguments(for: commandParser)
     return Command(
@@ -139,14 +155,34 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
             let fileManager = FileManager.default
             let isUnitTest = arguments.get(unit) ?? false
             let machineConfig = try config(for: machineArgs, using: fileManager, for: arguments)
+            let machineNames = try validMachine(names: arguments.get(machineNameArgs), commandParser: commandParser)
+            var exitStatus: Int32?
+            let queue = CreateMachineOperation.defaultQueue
+            let printQueue = printOperationQueue()
+            machineNames.forEach({ (name) in
+                let op = CreateMachineOperation(withName: name, andConfig: machineConfig, isUnit: isUnitTest)
+                let completionOp = BlockOperation {
+                    if op.terminationStatus != 0 {
+                        exitStatus = op.terminationStatus
+                    }
+                    if let output = op.standardOutput, !output.isEmpty {
+                        print(output)
+                    }
+                    if let error = op.standardError, !error.isEmpty {
+                        print(errorMessage: error)
+                    }
+                }
+                completionOp.addDependency(op)
+                queue.addOperation(op)
+                printQueue.addOperation(completionOp)
+            })
+            queue.waitUntilAllOperationsAreFinished()
+            printQueue.waitUntilAllOperationsAreFinished()
+            if let exitStatus = exitStatus {
+                throw CLIError.createMachineFailed(status: exitStatus)
+            }
+            print(NSLocalizedString("Machines created successfully!", comment: "Machine creation success message"))
             
-            // create machine using Operation
-            createMachines(withNames: <#T##[String]#>, andConfig: machineConfig)
-            print( try createMachine(using: <#T##[String]#>))
-            print( try createMachine(using: machineConfig, isUnitTest: isUnitTest) )
-//            print(isUnitTest ? "true" : "false")
-//            let config = MachineConfig(
-//            createMachines(withNames: <#T##[String]#>, andConfig: <#T##MachineConfig#>)
     })
 }
 

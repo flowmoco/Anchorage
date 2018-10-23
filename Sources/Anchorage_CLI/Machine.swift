@@ -10,28 +10,9 @@ import Utility
 import Basic
 import Anchorage
 
-enum MachineArgument: CaseIterable {
-    case amazonec2AccessKey
-    case amazonec2SecretKey
-    
-    var argumentName: String {
-        switch self {
-        case .amazonec2AccessKey:
-            return "--amazonec2-access-key"
-        case .amazonec2SecretKey:
-            return "--amazonec2-secret-key"
-        }
-    }
-    
-    var argumentShortName: String?{
-        switch self {
-        case .amazonec2AccessKey:
-            return "-k"
-        case .amazonec2SecretKey:
-            return "-s"
-        }
-    }
-    
+
+
+public extension MachineArgument {
     func argument(for commandParser: ArgumentParser) -> Any {
         switch self {
         case .amazonec2AccessKey:
@@ -73,27 +54,7 @@ enum MachineArgument: CaseIterable {
             config.driver.secretKey = s
         }
     }
-    
-    func argumentsList(for config: MachineConfig) -> [String]? {
-        switch self {
-        case .amazonec2AccessKey:
-            guard let s = config.driver.accessKey else { return nil }
-            return [self.argumentName, s]
-        case .amazonec2SecretKey:
-            guard let s = config.driver.secretKey else { return nil }
-            return [self.argumentName, s]
-        }
-    }
-    
-    static func argumentsList(for config: MachineConfig) -> [String] {
-        return self.allCases.reduce(into: [String](), { (result, arg) in
-            guard let s = arg.argumentsList(for: config) else { return }
-            result.append(contentsOf: s)
-        })
-    }
 }
-
-
 
 func defaultConfig(forCluster cluster: String, using fileManager: FileManager) throws -> MachineConfig {
     if let config = try Cluster.defaultMachineConfig(with: cluster, using: fileManager) {

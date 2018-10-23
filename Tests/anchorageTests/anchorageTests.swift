@@ -14,25 +14,39 @@ final class anchorageTests: XCTestCase {
         try cluster.delete(using: fm)
     }
     
+    func testRunningProcessAsync() throws {
+        let path = FileManager.default.currentDirectoryPath
+        let opKeys = ["ls1", "ls2", "ls3"]
+        let q = ProcessOperation.defaultQueue
+        let ops: [ProcessOperation] = opKeys.reduce(into: [ProcessOperation]()) { (res, key) in
+            let ls = ProcessOperation(commands: ["ls"], currentDirectory: URL(fileURLWithPath: path))
+            res.append(ls)
+            q.addOperation(ls)
+        }
+        
+        q.waitUntilAllOperationsAreFinished()
+        ops.forEach { (op) in
+            XCTAssertEqual(op.terminationStatus, 0)
+            XCTAssertTrue(op.standardOutput?.contains("Anchor") ?? false)
+        }
+    }
+    
     func testRunningProcess() throws {
         let path = FileManager.default.currentDirectoryPath
-        let ls = try process(commands: ["ls"], currentDirectory: URL(fileURLWithPath: path))
-        let res = try Anchorage.wait(forProcess: ls)
-        XCTAssertTrue(res.count > 3)
-        XCTAssertThrowsError(
-            try Anchorage.wait(forProcess:
-                try process(commands: ["dockerfds"], currentDirectory: URL(fileURLWithPath: path))
-            )
-        )
+        let ls = ProcessOperation(commands: ["ls"], currentDirectory: URL(fileURLWithPath: path)).startAndWait()
+        XCTAssertEqual(ls.terminationStatus, 0)
+        let p1 = ProcessOperation(commands: ["dockerfds"], currentDirectory: URL(fileURLWithPath: path)).startAndWait()
+        XCTAssertEqual(p1.terminationStatus, 127)
+        XCTAssertEqual(p1.standardOutput ?? "fail", "")
+        XCTAssertEqual(p1.standardError ?? "", "env: dockerfds: No such file or directory\n")
         do {
-            let docker = try process(commands: ["ls", "-D"], currentDirectory: URL(fileURLWithPath: path))
-            let out = try Anchorage.wait(forProcess: docker)
-            print(out)
-            XCTFail()
-        } catch MachineErrors.processExitedWithStatus(let status, _, let reason, let output) {
-            XCTAssertEqual(status, 1)
-            XCTAssertEqual(reason, .exit)
-            XCTAssertTrue(output.contains("illegal option"))
+            let docker = ProcessOperation(commands: ["ls", "-D"], currentDirectory: URL(fileURLWithPath: path)).startAndWait()
+            let out = try docker.output()
+            XCTAssertEqual(docker.terminationStatus, 1)
+            XCTAssertEqual(docker.terminationReason, .exit)
+            XCTAssertTrue(out.contains("illegal option"))
+        } catch {
+            XCTFail("Threw unexpected error: \(error)")
         }
     }
     
