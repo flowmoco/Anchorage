@@ -53,7 +53,7 @@ public extension Cluster.Argument  {
         guard let parser = args[arg] else {
             return nil
         }
-        return arg.value(for: parser, for: result)
+        return arg.value(for: parser, for: result) as T
     }
 
     func value<T>(for arg: Any, for result: ArgumentParser.Result) -> T {

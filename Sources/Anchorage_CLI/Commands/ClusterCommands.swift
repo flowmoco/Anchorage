@@ -16,11 +16,11 @@ func clusterCommand(for argumentParser: ArgumentParser) -> Command {
         overview: NSLocalizedString("Create, destroy and manage clusters.",
                                     comment: "Cluster command overview")
     )
-    let _ = clusterSubcommands(for: commandParser)
+    let subcommands = clusterSubcommands(for: commandParser)
     return Command(
         name: name,
         run: { (arguments) in
-            // code
+            try run(commands: subcommands, for: commandParser, giving: arguments)
     })
 }
 
@@ -31,18 +31,21 @@ func createClusterCommand(for argumentParser: ArgumentParser) -> Command {
         overview: NSLocalizedString("Create new clusters.", comment: "Create command overview")
     )
     let unit = unitTest(for: commandParser)
+    let quiet = quietArgument(for: commandParser)
     let clusterArgs = Cluster.Argument.arguments(for: commandParser)
     let machineArgs = MachineArgument.arguments(for: commandParser)
     let clusterName = nameArgument(for: commandParser)
+    
     return Command(
         name: name,
         run: { (arguments) in
             guard let invalidName = arguments.get(clusterName) else {
                 throw ArgumentParserError.expectedArguments(commandParser, ["names"])
             }
-            let cluster = try Cluster.Argument.cluster(withName: invalidName, from: clusterArgs, for: arguments)
+            var cluster = try Cluster.Argument.cluster(withName: invalidName, from: clusterArgs, for: arguments)
             let fileManager = FileManager.default
             let isUnitTest = arguments.get(unit) ?? false
+            let isQuiet = arguments.get(quiet) ?? false
             let machineConfig = try config(for: machineArgs, using: fileManager, for: arguments)
             let queue = CreateMachineOperation.defaultQueue
             let printQueue = printOperationQueue()
@@ -51,11 +54,27 @@ func createClusterCommand(for argumentParser: ArgumentParser) -> Command {
             let workerNames = cluster.initialNames(for: .swarmWorker)
             let cephNames = cluster.initialNames(for: .cephNode)
             
-            let createManagerOps = managerNames.map({ (name) -> CreateMachineOperation in
-                let op = CreateMachineOperation(withName: name, andConfig: machineConfig, isUnit: isUnitTest)
-                queue.addOperation(op)
-                return op
+            let createManagerOps = createMachineOps(withNames: managerNames, andConfig: machineConfig, isUnitTest: isUnitTest)
+            queue.addOperations(createManagerOps, waitUntilFinished: false)
+            let printCreateManagerErrors = createPrintErrorOps(forProcesses: createManagerOps)
+            printQueue.addOperations(printCreateManagerErrors, waitUntilFinished: false)
+            let printCreateManagerOutput = createPrintOutputOps(forCreateMachineOps: createManagerOps, isQuiet: isQuiet)
+            printQueue.addOperations(printCreateManagerOutput, waitUntilFinished: false)
+            
+            queue.waitUntilAllOperationsAreFinished()
+            printQueue.waitUntilAllOperationsAreFinished()
+            try createManagerOps.forEach({ (machineOp) in
+                if machineOp.terminationStatus == 0 {
+                    cluster.nodes[Cluster.Kinds.swarmManager]?.append(machineOp.machineName)
+                    try cluster.save(using: fileManager)
+                }
             })
+            
+            try throwOnAny(processOperations: createManagerOps)
+            
+            if !isQuiet {
+                print(NSLocalizedString("Cluster created successfully!", comment: "Cluster creation success message"))
+            }
     })
 }
 

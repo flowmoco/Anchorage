@@ -70,7 +70,7 @@ public struct Cluster: Encodable, Decodable {
     
     public let name: String
     
-    public var nodes: [Kinds: [String]] = [:]
+    public var nodes: [Kinds: [String]]
     
     public let initialNodeCounts: [Kinds: Int]
     
@@ -85,6 +85,10 @@ public struct Cluster: Encodable, Decodable {
             case .cephNode:
                 out[kind] = initialCephNodes ?? 0
             }
+        })
+        
+        self.nodes = Kinds.allCases.reduce(into: [Kinds: [String]](), { (out, kind) in
+            out[kind] = []
         })
         
         if let workers = initialSwarmWorkers, workers > 0 {

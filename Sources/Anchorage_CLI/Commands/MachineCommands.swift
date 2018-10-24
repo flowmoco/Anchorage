@@ -55,6 +55,24 @@ func createMachineOps(withNames machineNames: [String], andConfig machineConfig:
     })
 }
 
+func createPrintErrorOps(forProcesses processOps: [ProcessOperation]) -> [BlockOperation] {
+    return processOps.map({ (processOp) in
+        return processOp.printErrorOperation()
+    })
+}
+
+func createPrintOutputOps(forCreateMachineOps machineOps: [CreateMachineOperation], isQuiet: Bool) -> [BlockOperation] {
+    return machineOps.map({ (machineOp) -> BlockOperation in
+        let name = machineOp.machineName
+        let responseBlock = {
+            if machineOp.terminationStatus == 0 {
+                print(isQuiet ? name : "Created machine " + name)
+            }
+        }
+        return isQuiet ? machineOp.afterOp(responseBlock) : machineOp.printOutputOperation(and: responseBlock)
+    })
+}
+
 func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
     let name = "create"
     let commandParser = argumentParser.add(
@@ -79,19 +97,9 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
             let printQueue = printOperationQueue()
             let machineOps = createMachineOps(withNames: machineNames, andConfig: machineConfig, isUnitTest: isUnitTest)
             queue.addOperations(machineOps, waitUntilFinished: false)
-            let errorOps = machineOps.map({ (machineOp) in
-                return machineOp.printErrorOperation()
-            })
+            let errorOps = createPrintErrorOps(forProcesses: machineOps)
             printQueue.addOperations(errorOps, waitUntilFinished: false)
-            let printOps = machineOps.map({ (machineOp) -> BlockOperation in
-                let name = machineOp.machineName
-                let responseBlock = {
-                    if machineOp.terminationStatus == 0 {
-                        print(isQuiet ? name : "Created machine " + name)
-                    }
-                }
-                return isQuiet ? machineOp.afterOp(responseBlock) : machineOp.printOutputOperation(and: responseBlock)
-            })
+            let printOps = createPrintOutputOps(forCreateMachineOps: machineOps, isQuiet: isQuiet)
             printQueue.addOperations(printOps, waitUntilFinished: false)
             
             queue.waitUntilAllOperationsAreFinished()
