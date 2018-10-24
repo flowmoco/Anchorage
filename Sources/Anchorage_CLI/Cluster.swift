@@ -27,14 +27,14 @@ public extension Cluster.Argument  {
             return NSLocalizedString("The number of swarm managers to create, a minimum of 1 is required for a docker swarm to be created, default 0.", comment: "Swarm manager number usage")
         case .swarmWorkers:
             return NSLocalizedString("The number of swarm workers to create, default 0.", comment: "Swarm worker number usage")
-        case .ceph:
+        case .cephNodes:
             return NSLocalizedString("The number of ceph storage nodes to create, default 0.", comment: "Swarm worker number usage")
         }
     }
     
     func argument(for commandParser: ArgumentParser) -> Any {
         switch self {
-        case .swarmManagers, .swarmWorkers, .ceph:
+        case .swarmManagers, .swarmWorkers, .cephNodes:
             return commandParser.add(
                 option: self.argumentName, shortName: self.argumentShortName,
                 kind: Int.self,
@@ -58,12 +58,20 @@ public extension Cluster.Argument  {
 
     func value<T>(for arg: Any, for result: ArgumentParser.Result) -> T {
         switch self {
-        case .swarmManagers, .swarmWorkers, .ceph:
+        case .swarmManagers, .swarmWorkers, .cephNodes:
             guard let i = result.get(arg as! OptionArgument<T>) else {
                 return 0 as! T
             }
             return i
         }
+    }
+    
+    static func cluster(withName name: String, from args: [Cluster.Argument: Any], for result: ArgumentParser.Result) throws -> Cluster {
+        return try Cluster(
+            name: name,
+            initialSwarmManagers: value(for: Cluster.Argument.swarmManagers, from: args, for: result),
+            initialSwarmWorkers: value(for: Cluster.Argument.swarmWorkers, from: args, for: result),
+            initialCephNodes: value(for: Cluster.Argument.cephNodes, from: args, for: result))
     }
 }
 

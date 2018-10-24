@@ -105,6 +105,11 @@ final class anchorageTests: XCTestCase {
     }
 
     static var allTests = [
+        ("testCreatingCluster", testCreatingCluster),
+        ("testRunningProcessAsync", testRunningProcessAsync),
+        ("testRunningProcess", testRunningProcess),
+        ("testDefaultConfigURL", testDefaultConfigURL),
+        ("testMachineNames", testMachineNames),
         ("testExample", testExample),
     ]
 }

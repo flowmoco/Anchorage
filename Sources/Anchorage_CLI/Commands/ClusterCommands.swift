@@ -33,14 +33,25 @@ func createClusterCommand(for argumentParser: ArgumentParser) -> Command {
     let unit = unitTest(for: commandParser)
     let clusterArgs = Cluster.Argument.arguments(for: commandParser)
     let machineArgs = MachineArgument.arguments(for: commandParser)
-    let clusterNames = nameArgument(for: commandParser)
+    let clusterName = nameArgument(for: commandParser)
     return Command(
         name: name,
         run: { (arguments) in
+            guard let invalidName = arguments.get(clusterName) else {
+                throw ArgumentParserError.expectedArguments(commandParser, ["names"])
+            }
+            let cluster = try Cluster.Argument.cluster(withName: invalidName, from: clusterArgs, for: arguments)
+            let fileManager = FileManager.default
             let isUnitTest = arguments.get(unit) ?? false
-            let swarmManagers: Int = Cluster.Argument.value(for: .swarmManagers, from: clusterArgs, for: arguments)!
-            let swarmWorkers: Int = Cluster.Argument.value(for: .swarmWorkers, from: clusterArgs, for: arguments)!
-            let ceph: Int = Cluster.Argument.value(for: .ceph, from: clusterArgs, for: arguments)!
+            let machineConfig = try config(for: machineArgs, using: fileManager, for: arguments)
+            let queue = CreateMachineOperation.defaultQueue
+            let printQueue = printOperationQueue()
+            
+            let managerNames = cluster.initialNames(for: .swarmManager)
+            let workerNames = cluster.initialNames(for: .swarmWorker)
+            let cephNames = cluster.initialNames(for: .cephNode)
+            
+            
             // code
     })
 }

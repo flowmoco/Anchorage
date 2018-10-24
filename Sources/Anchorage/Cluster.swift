@@ -9,10 +9,21 @@ import Foundation
 
 public struct Cluster: Encodable, Decodable {
     
+    public enum Errors: Error {
+        case swarmRequiresManagers
+        
+        public var localizedDescription: String {
+            switch self {
+            case .swarmRequiresManagers:
+                return NSLocalizedString("Unable to create cluster with less than 1 swarm manager.", comment: "Cluster Error")
+            }
+        }
+    }
+    
     public enum Argument: CaseIterable {
         case swarmManagers
         case swarmWorkers
-        case ceph
+        case cephNodes
         
         public var argumentName: String {
             switch self {
@@ -20,8 +31,8 @@ public struct Cluster: Encodable, Decodable {
                 return "--swarm-managers"
             case .swarmWorkers:
                 return "--swarm-workers"
-            case .ceph:
-                return "--ceph"
+            case .cephNodes:
+                return "--ceph-nodes"
             }
         }
         
@@ -31,14 +42,14 @@ public struct Cluster: Encodable, Decodable {
                 return "-m"
             case .swarmWorkers:
                 return "-w"
-            case .ceph:
+            case .cephNodes:
                 return "-c"
             }
         }
         
         func argumentsList(for cluster: Cluster) -> [String]? {
             switch self {
-            case .swarmManagers, .swarmWorkers, .ceph:
+            case .swarmManagers, .swarmWorkers, .cephNodes:
                 return nil
             }
         }
@@ -51,13 +62,60 @@ public struct Cluster: Encodable, Decodable {
         }
     }
     
+    public enum Kinds: String, Encodable, Decodable, CaseIterable {
+        case swarmManager = "swarm-manager"
+        case swarmWorker = "swarm-worker"
+        case cephNode = "ceph-node"
+    }
+    
     public let name: String
     
-    public var managers: [String] = []
-    public var workers: [String] = []
+    public var nodes: [Kinds: [String]] = [:]
     
-    public init(name: String) throws {
+    public let initialNodeCounts: [Kinds: Int]
+    
+    public init(name: String, initialSwarmManagers: Int? = nil, initialSwarmWorkers: Int? = nil, initialCephNodes: Int? = nil) throws {
         self.name = try valid(identifier: name)
+        self.initialNodeCounts = Kinds.allCases.reduce(into: [Kinds: Int](), { (out, kind) in
+            switch kind {
+            case .swarmManager:
+                out[kind] = initialSwarmManagers ?? 0
+            case .swarmWorker:
+                out[kind] = initialSwarmWorkers ?? 0
+            case .cephNode:
+                out[kind] = initialCephNodes ?? 0
+            }
+        })
+        
+        if let workers = initialSwarmWorkers, workers > 0 {
+            guard let managers = initialSwarmManagers, managers > 0 else {
+                throw Errors.swarmRequiresManagers
+            }
+        }
+    }
+    
+    public func initialNames(for kind: Kinds) -> [String] {
+        guard let number = initialNodeCounts[kind] else {
+            return []
+        }
+        return newNames(quantity: number, forNodeKind: kind)
+    }
+    
+    public func newNames(quantity number: Int, forNodeKind kind: Kinds) -> [String] {
+        let minInt: Int
+        if let nodes = self.nodes[kind] {
+            minInt = nodes.reduce(1) { (prev, name) -> Int in
+                guard let numberString = name.components(separatedBy: CharacterSet.decimalDigits.inverted).last, let number = Int(numberString), number >= prev else {
+                    return prev
+                }
+                return number + 1
+            }
+        } else {
+            minInt = 1
+        }
+        return (minInt..<(minInt + number)).map({ (n) -> String in
+            return "\(self.name)-\(kind.rawValue)-\(n)"
+        })
     }
     
     public static func list(using fileManager: FileManager) throws -> [String] {
