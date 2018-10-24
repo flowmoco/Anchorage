@@ -50,11 +50,13 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
     let machineNameArgs = namesArgument(for: commandParser)
     let unit = unitTest(for: commandParser)
     let machineArgs = MachineArgument.arguments(for: commandParser)
+    let quiet = quietArgument(for: commandParser)
     return Command(
         name: name,
         run: { (arguments) in
             let fileManager = FileManager.default
             let isUnitTest = arguments.get(unit) ?? false
+            let isQuiet = arguments.get(quiet) ?? false
             let machineConfig = try config(for: machineArgs, using: fileManager, for: arguments)
             let machineNames = try validMachine(names: arguments.get(machineNameArgs), commandParser: commandParser)
             var exitStatus: Int32?
@@ -63,14 +65,17 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
             machineNames.forEach({ (name) in
                 let op = CreateMachineOperation(withName: name, andConfig: machineConfig, isUnit: isUnitTest)
                 let completionOp = BlockOperation {
-                    if op.terminationStatus != 0 {
-                        exitStatus = op.terminationStatus
-                    }
-                    if let output = op.standardOutput, !output.isEmpty {
+                    
+                    if !isQuiet, let output = op.standardOutput, !output.isEmpty {
                         print(output)
                     }
                     if let error = op.standardError, !error.isEmpty {
                         print(errorMessage: error)
+                    }
+                    if op.terminationStatus == 0 {
+                        print(isQuiet ? name : "Created machine " + name)
+                    } else {
+                        exitStatus = op.terminationStatus
                     }
                 }
                 completionOp.addDependency(op)
@@ -82,7 +87,8 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
             if let exitStatus = exitStatus {
                 throw CLIError.createMachineFailed(status: exitStatus)
             }
-            print(NSLocalizedString("Machines created successfully!", comment: "Machine creation success message"))
-            
+            if !isQuiet {
+                print(NSLocalizedString("Machines created successfully!", comment: "Machine creation success message"))
+            }
     })
 }

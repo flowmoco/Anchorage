@@ -65,8 +65,11 @@ final class AnchorTests: XCTestCase {
         let (output, error) = try run(commands: ["machine", "create", "--unit-test", "robtest1", "robtest2", "robtest3"], exitCode: 0)
         XCTAssertEqual(output, """
 docker-machine create robtest1
+Created machine robtest1
 docker-machine create robtest2
+Created machine robtest2
 docker-machine create robtest3
+Created machine robtest3
 Machines created successfully!
 
 """)
@@ -77,9 +80,23 @@ Machines created successfully!
         let (output, error) = try run(commands: ["machine", "create", "--unit-test", "--amazonec2-access-key", "foobar", "--amazonec2-secret-key", "secret", "robtest1", "robtest2", "robtest3"], exitCode: 0)
         XCTAssertEqual(output, """
 docker-machine create --amazonec2-access-key foobar --amazonec2-secret-key secret robtest1
+Created machine robtest1
 docker-machine create --amazonec2-access-key foobar --amazonec2-secret-key secret robtest2
+Created machine robtest2
 docker-machine create --amazonec2-access-key foobar --amazonec2-secret-key secret robtest3
+Created machine robtest3
 Machines created successfully!
+
+""")
+        XCTAssertEqual(error, "")
+    }
+    
+    func testMachineCreateCommandWithArgsQuiet() throws {
+        let (output, error) = try run(commands: ["machine", "create", "-q", "--unit-test", "--amazonec2-access-key", "foobar", "--amazonec2-secret-key", "secret", "robtest1", "robtest2", "robtest3"], exitCode: 0)
+        XCTAssertEqual(output, """
+robtest1
+robtest2
+robtest3
 
 """)
         XCTAssertEqual(error, "")

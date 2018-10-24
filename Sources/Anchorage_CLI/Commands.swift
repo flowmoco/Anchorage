@@ -35,6 +35,10 @@ func unitTest(for commandParser: ArgumentParser) -> OptionArgument<Bool>{
     return commandParser.add(option: "--unit-test", shortName: nil, kind: Bool.self, usage: usage, completion: ShellCompletion.values([(value: "true", description: "The value for a boolean true"), (value: "false", description: "The value for a boolean false")]))
 }
 
+func quietArgument(for commandParser: ArgumentParser) -> OptionArgument<Bool> {
+    let usage = NSLocalizedString("Limit output to IDs only.  Generally used for scripting", comment: "Quiet Usage")
+    return commandParser.add(option: "--quiet", shortName: "-q", kind: Bool.self, usage: usage, completion: ShellCompletion.values([(value: "true", description: "The value for a boolean true"), (value: "false", description: "The value for a boolean false")]))
+}
 
 
 func rootCommands(for argumentParser: ArgumentParser) -> [Command] {
@@ -49,7 +53,7 @@ func rootCommands(for argumentParser: ArgumentParser) -> [Command] {
 
 func printOperationQueue() -> OperationQueue {
     let printQueue = OperationQueue()
-    //printQueue.maxConcurrentOperationCount = 1
+    printQueue.maxConcurrentOperationCount = 1
     printQueue.name = "Output OperationQueue: printQueue"
     return printQueue
 }

@@ -51,8 +51,11 @@ func createClusterCommand(for argumentParser: ArgumentParser) -> Command {
             let workerNames = cluster.initialNames(for: .swarmWorker)
             let cephNames = cluster.initialNames(for: .cephNode)
             
-            
-            // code
+//            let createManagerOps = managerNames.map({ (name) -> CreateMachineOperation in
+//                let op = CreateMachineOperation(withName: name, andConfig: machineConfig, isUnit: isUnitTest)
+//                queue.addOperation(op)
+//                return op
+//            })
     })
 }
 
