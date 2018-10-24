@@ -39,6 +39,22 @@ func validMachine(names: [String]?, commandParser: ArgumentParser) throws -> [St
     })
 }
 
+
+func throwOnAny(processOperations: [ProcessOperation], withoutTerminationStatus requiredTerminationStatus: Int32 = 0) throws {
+    try processOperations.forEach({ (op) in
+        if op.terminationStatus != requiredTerminationStatus {
+            throw CLIError.createMachineFailed(status: op.terminationStatus)
+        }
+    })
+}
+
+
+func createMachineOps(withNames machineNames: [String], andConfig machineConfig: MachineConfig, isUnitTest: Bool) -> [CreateMachineOperation] {
+    return machineNames.map({ (name) -> CreateMachineOperation in
+        return CreateMachineOperation(withName: name, andConfig: machineConfig, isUnit: isUnitTest)
+    })
+}
+
 func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
     let name = "create"
     let commandParser = argumentParser.add(
@@ -59,34 +75,30 @@ func machineCreateCommand(for argumentParser: ArgumentParser) -> Command {
             let isQuiet = arguments.get(quiet) ?? false
             let machineConfig = try config(for: machineArgs, using: fileManager, for: arguments)
             let machineNames = try validMachine(names: arguments.get(machineNameArgs), commandParser: commandParser)
-            var exitStatus: Int32?
             let queue = CreateMachineOperation.defaultQueue
             let printQueue = printOperationQueue()
-            machineNames.forEach({ (name) in
-                let op = CreateMachineOperation(withName: name, andConfig: machineConfig, isUnit: isUnitTest)
-                let completionOp = BlockOperation {
-                    
-                    if !isQuiet, let output = op.standardOutput, !output.isEmpty {
-                        print(output)
-                    }
-                    if let error = op.standardError, !error.isEmpty {
-                        print(errorMessage: error)
-                    }
-                    if op.terminationStatus == 0 {
+            let machineOps = createMachineOps(withNames: machineNames, andConfig: machineConfig, isUnitTest: isUnitTest)
+            queue.addOperations(machineOps, waitUntilFinished: false)
+            let errorOps = machineOps.map({ (machineOp) in
+                return machineOp.printErrorOperation()
+            })
+            printQueue.addOperations(errorOps, waitUntilFinished: false)
+            let printOps = machineOps.map({ (machineOp) -> BlockOperation in
+                let name = machineOp.machineName
+                let responseBlock = {
+                    if machineOp.terminationStatus == 0 {
                         print(isQuiet ? name : "Created machine " + name)
-                    } else {
-                        exitStatus = op.terminationStatus
                     }
                 }
-                completionOp.addDependency(op)
-                queue.addOperation(op)
-                printQueue.addOperation(completionOp)
+                return isQuiet ? machineOp.afterOp(responseBlock) : machineOp.printOutputOperation(and: responseBlock)
             })
+            printQueue.addOperations(printOps, waitUntilFinished: false)
+            
             queue.waitUntilAllOperationsAreFinished()
             printQueue.waitUntilAllOperationsAreFinished()
-            if let exitStatus = exitStatus {
-                throw CLIError.createMachineFailed(status: exitStatus)
-            }
+            
+            try throwOnAny(processOperations: machineOps)
+            
             if !isQuiet {
                 print(NSLocalizedString("Machines created successfully!", comment: "Machine creation success message"))
             }

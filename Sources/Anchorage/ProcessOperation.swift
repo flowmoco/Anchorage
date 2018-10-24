@@ -103,4 +103,36 @@ public class ProcessOperation: AsyncOperation {
     public var standardError: String? {
         return String(bytes: self.standardErrorPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)
     }
+    
+    public func printOutput(){
+        if let output = self.standardOutput, !output.isEmpty {
+            print(output)
+        }
+    }
+    
+    public func printError(){
+        if let error = self.standardError, !error.isEmpty {
+            print(errorMessage: error)
+        }
+    }
+    
+    public func printOutputOperation(and: (()->Void)? = nil) -> BlockOperation {
+        return afterOp {
+            self.printOutput()
+            and?()
+        }
+    }
+    
+    public func printErrorOperation(and: (()->Void)? = nil) -> BlockOperation {
+        return afterOp {
+            self.printError()
+            and?()
+        }
+    }
+    
+    public func afterOp(_ completionBlock: @escaping () -> Void) -> BlockOperation {
+        let op = BlockOperation(block: completionBlock)
+        op.addDependency(self)
+        return op
+    }
 }

@@ -96,6 +96,7 @@ public func valid(identifier: String) throws -> String {
 public class CreateMachineOperation: ProcessOperation {
     
     let isUnit: Bool
+    public let machineName: String
     
     public init(withName name: String, andConfig config: MachineConfig, isUnit: Bool) {
         let homeDirURL: URL
@@ -106,11 +107,13 @@ public class CreateMachineOperation: ProcessOperation {
             homeDirURL = URL(fileURLWithPath: NSHomeDirectory())
         }
         self.isUnit = isUnit
+        self.machineName = name
         super.init(
             commands: [
                 "docker-machine", "create"
             ] + MachineArgument.argumentsList(for: config) + [ name ],
             currentDirectory: homeDirURL)
+        self.name = "CreateMachineOperation(withName: \(name))"
     }
     
     public override func main() {
@@ -137,6 +140,7 @@ public class CreateMachineOperation: ProcessOperation {
         }
         return super.terminationStatus
     }
+
 }
 
 func currentDirectory(using: FileManager = FileManager.default) -> URL {

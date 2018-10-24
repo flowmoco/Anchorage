@@ -9,6 +9,7 @@ import Foundation
 
 import Foundation
 import Utility
+import Anchorage
 
 enum CLIError: Error {
     case createMachineFailed(status: Int32)
@@ -20,13 +21,6 @@ enum CLIError: Error {
             return String(format: message, String(status))
         }
     }
-}
-
-func print(errorMessage: String) {
-    guard let data = ( errorMessage + "\n" ).data(using: .utf8) else {
-        return
-    }
-    FileHandle.standardError.write(data)
 }
 
 public func handle(error: Error) {

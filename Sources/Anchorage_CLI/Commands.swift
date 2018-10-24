@@ -55,6 +55,7 @@ func printOperationQueue() -> OperationQueue {
     let printQueue = OperationQueue()
     printQueue.maxConcurrentOperationCount = 1
     printQueue.name = "Output OperationQueue: printQueue"
+    printQueue.qualityOfService = .userInteractive
     return printQueue
 }
 
