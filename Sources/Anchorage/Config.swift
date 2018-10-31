@@ -23,20 +23,32 @@ public func jsonEncoder() -> JSONEncoder {
         encoder.dateEncodingStrategy = .deferredToDate
     }
     encoder.dataEncodingStrategy = .base64
-    encoder.keyEncodingStrategy = .convertToSnakeCase
+    #if os(Linux)
+    
+    #else
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+    #endif
     encoder.nonConformingFloatEncodingStrategy = .throw
     return encoder
+}
+
+func dateDecodingStratergy() -> JSONDecoder.DateDecodingStrategy {
+    if #available(OSX 10.12, *) {
+        return .iso8601
+    } else {
+        return .deferredToDate
+    }
 }
 
 public func jsonDecoder() -> JSONDecoder {
     let decoder = JSONDecoder()
     decoder.dataDecodingStrategy = .base64
-    if #available(OSX 10.12, *) {
-        decoder.dateDecodingStrategy = .iso8601
-    } else {
-        decoder.dateDecodingStrategy = .deferredToDate
-    }
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    decoder.dateDecodingStrategy = dateDecodingStratergy()
+    #if os(Linux)
+    
+    #else
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+    #endif
     decoder.nonConformingFloatDecodingStrategy = .throw
     return decoder
 }

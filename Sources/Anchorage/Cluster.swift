@@ -73,6 +73,7 @@ public struct Cluster: Encodable, Decodable {
     public var nodes: [Kinds: [String]]
     
     public let initialNodeCounts: [Kinds: Int]
+    public var defaultMachineConfig: [Kinds: MachineConfig] = [:]
     
     public init(name: String, initialSwarmManagers: Int? = nil, initialSwarmWorkers: Int? = nil, initialCephNodes: Int? = nil) throws {
         self.name = try valid(identifier: name)
@@ -174,5 +175,19 @@ public struct Cluster: Encodable, Decodable {
     
     static func clustersDirectory(using fileManager: FileManager) throws -> URL {
         return try anchorageDirectory(with: fileManager).appendingPathComponent("clusters", isDirectory: true)
+    }
+    
+    public func addingMachinesToCluster(createMachineOps: [CreateMachineOperation], kind: Cluster.Kinds) -> Cluster {
+        return createMachineOps.reduce(into: self, { (cluster, op) in
+            if op.terminationStatus == 0 {
+                cluster.nodes[kind]?.append(op.machineName)
+            }
+        })
+    }
+    
+    public func addingDefault(machineConfig: MachineConfig, forKind kind: Cluster.Kinds) -> Cluster {
+        var out = self
+        out.defaultMachineConfig[kind] = machineConfig
+        return out
     }
 }

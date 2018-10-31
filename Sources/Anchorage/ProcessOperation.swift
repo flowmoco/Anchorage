@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Dispatch
 
 public class ProcessOperation: AsyncOperation {
     
@@ -16,9 +17,10 @@ public class ProcessOperation: AsyncOperation {
         return queue
     }()
     
-    init(commands: [String],
-                 currentDirectory: URL,
-                 environment: [String: String]? = nil) {
+    public init(commands: [String],
+                isUnit: Bool,
+                currentDirectory: URL? = nil,
+                environment: [String: String]? = nil) {
         process = Process()
         process.arguments = commands
         process.environment = environment ?? ProcessInfo.processInfo.environment
@@ -26,13 +28,15 @@ public class ProcessOperation: AsyncOperation {
         process.standardOutput = Pipe()
         
         if #available(OSX 10.13, *) {
-            process.currentDirectoryURL = currentDirectory
+            process.currentDirectoryURL = currentDirectory ?? FileManager().homeDirectoryForCurrentUser
             process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         } else {
-            process.currentDirectoryPath = currentDirectory.path
+            process.currentDirectoryPath = currentDirectory?.path ?? NSHomeDirectory()
             process.launchPath = "/usr/bin/env"
         }
-        
+        self.isUnit = isUnit
+        super.init()
+        name = "Process " + commands.joined(separator: " ")
     }
     
     public let process: Process
@@ -44,8 +48,12 @@ public class ProcessOperation: AsyncOperation {
     }
     
     public var error: Error?
+    let isUnit: Bool
     
     public var terminationStatus: Int32 {
+        if isUnit {
+            return 0
+        }
         return process.terminationStatus
     }
     
@@ -61,23 +69,44 @@ public class ProcessOperation: AsyncOperation {
     }
     
     override public func main() {
-        self.state = .executing
-        
-        process.qualityOfService = self.qualityOfService
-        
-        process.terminationHandler = { [weak self] (process) in
-            self?.state = .finished
-        }
-        
-        do {
-            if #available(OSX 10.13, *) {
-                try process.run()
-            } else {
-                process.launch()
+        if isUnit {
+            self.state = .executing
+            guard let commands = process.arguments else {
+                self.state = .finished
+                return
             }
-        } catch {
-            self.error = error
+            let commandString = commands.joined(separator: " ")
+            writeAndClose(string: commandString, toFileHandle: self.standardOutputPipe.fileHandleForWriting)
+            writeAndClose(string: nil, toFileHandle: self.standardErrorPipe.fileHandleForWriting)
+            self.state = .finished
+        } else {
+            self.state = .executing
+            
+            process.qualityOfService = self.qualityOfService
+            
+            process.terminationHandler = { [weak self] (process) in
+                self?.processTerminated()
+            }
+            
+            do {
+                
+                #if os(Linux)
+                process.launch()
+                #else
+                if #available(OSX 10.13, *) {
+                    try process.run()
+                } else {
+                    process.launch()
+                }
+                #endif
+            } catch {
+                self.error = error
+            }
         }
+    }
+    
+    public func processTerminated(){
+        self.state = .finished
     }
     
     public func startAndWait() -> ProcessOperation {

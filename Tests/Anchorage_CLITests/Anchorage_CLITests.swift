@@ -68,6 +68,17 @@ final class Anchorage_CLITests: XCTestCase {
         XCTAssertTrue(output.contains("--unit-test"), "Should show create command in output")
         XCTAssertTrue(output.contains("Create a machine"), "Should show create command in output")
     }
+    
+    func testClusterCreateCommand() throws {
+        let (output, error) = try run(commands: ["cluster", "create", "test", "--unit-test", "--swarm-managers", "1"], exitCode: 0)
+        XCTAssertEqual(error, "")
+        XCTAssertEqual(output, """
+docker-machine create test-swarm-manager-1
+Created machine test-swarm-manager-1
+Cluster created successfully!
+
+""")
+    }
 
     /// Returns path to the built products directory.
     var productsDirectory: URL {

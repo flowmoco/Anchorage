@@ -63,42 +63,41 @@ final class AnchorTests: XCTestCase {
     
     func testMachineCreateCommand() throws {
         let (output, error) = try run(commands: ["machine", "create", "--unit-test", "robtest1", "robtest2", "robtest3"], exitCode: 0)
-        XCTAssertEqual(output, """
-docker-machine create robtest1
-Created machine robtest1
-docker-machine create robtest2
-Created machine robtest2
-docker-machine create robtest3
-Created machine robtest3
-Machines created successfully!
-
-""")
+        (1...3).forEach { (i) in
+            XCTAssertTrue(
+                output.contains("docker-machine create robtest\(i)\nCreated machine robtest\(i)")
+            )
+        }
+        
+        XCTAssertTrue(
+            output.contains("Machines created successfully!\n")
+        )
+        
         XCTAssertEqual(error, "")
     }
     
     func testMachineCreateCommandWithArgs() throws {
         let (output, error) = try run(commands: ["machine", "create", "--unit-test", "--amazonec2-access-key", "foobar", "--amazonec2-secret-key", "secret", "robtest1", "robtest2", "robtest3"], exitCode: 0)
-        XCTAssertEqual(output, """
-docker-machine create --amazonec2-access-key foobar --amazonec2-secret-key secret robtest1
-Created machine robtest1
-docker-machine create --amazonec2-access-key foobar --amazonec2-secret-key secret robtest2
-Created machine robtest2
-docker-machine create --amazonec2-access-key foobar --amazonec2-secret-key secret robtest3
-Created machine robtest3
-Machines created successfully!
-
-""")
+        (1...3).forEach { (i) in
+            XCTAssertTrue(
+                output.contains("docker-machine create --amazonec2-access-key foobar --amazonec2-secret-key secret robtest\(i)\nCreated machine robtest\(i)")
+            )
+        }
+        XCTAssertTrue(
+            output.contains(
+                "Machines created successfully!\n"
+            )
+        )
         XCTAssertEqual(error, "")
     }
     
     func testMachineCreateCommandWithArgsQuiet() throws {
         let (output, error) = try run(commands: ["machine", "create", "-q", "--unit-test", "--amazonec2-access-key", "foobar", "--amazonec2-secret-key", "secret", "robtest1", "robtest2", "robtest3"], exitCode: 0)
-        XCTAssertEqual(output, """
-robtest1
-robtest2
-robtest3
-
-""")
+        (1...3).forEach { (i) in
+            XCTAssertTrue(
+                output.contains("robtest\(i)")
+            )
+        }
         XCTAssertEqual(error, "")
     }
 

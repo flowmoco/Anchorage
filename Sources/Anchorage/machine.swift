@@ -7,13 +7,61 @@
 
 import Foundation
 
+struct Machine: Encodable, Decodable {
+    
+    let ConfigVersion: Int
+    let Driver: Machine.Driver
+    let HostOptions: Machine.HostOptions
+    let Name: String
+    
+    struct Driver: Encodable, Decodable {
+        let PrivateIPAddress: String
+    }
+    
+    struct HostOptions: Encodable, Decodable {
+        let EngineOptions: HostOptions.EngineOptions
+        
+        struct EngineOptions: Encodable, Decodable {
+            let TlsVerify: Bool
+        }
+    }
+    
+    static func named(_ name: String, using fileManager: FileManager) -> Machine? {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = dateDecodingStratergy()
+        decoder.dataDecodingStrategy = .base64
+        decoder.keyDecodingStrategy = .useDefaultKeys
+        decoder.nonConformingFloatDecodingStrategy = .throw
+        guard let data = try? Data(contentsOf: configFile(forMachine: name, using: fileManager)) else {
+            return nil
+        }
+        return try? decoder.decode(Machine.self, from: data)
+    }
+    
+    static func configFile(forMachine named: String, using fileManager: FileManager) -> URL {
+        let home: URL
+        if #available(OSX 10.12, *) {
+            home = fileManager.homeDirectoryForCurrentUser
+        } else {
+            home = URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+        }
+        return home.appendingPathComponent(".docker/machine/machines", isDirectory: true).appendingPathComponent(named, isDirectory: true).appendingPathComponent("config.json", isDirectory: false)
+    }
+}
+
+
+
+
+
 enum MachineErrors: Error, LocalizedError {
     case invalid(name: String)
     
     var localizedDescription: String {
         switch self {
         case .invalid(let name):
-            return String(format: NSLocalizedString("'%@' is not a valid machine name, which should only contain the following characers: [a-zA-Z0-9\\-]", comment: "Invalid name"), name)
+            return name.withCString { (name) -> String in
+                return String(format: NSLocalizedString("'%s' is not a valid machine name, which should only contain the following characers: [a-zA-Z0-9\\-]", comment: "Invalid name"), name)
+            }
         }
     }
 }
@@ -95,52 +143,36 @@ public func valid(identifier: String) throws -> String {
 
 public class CreateMachineOperation: ProcessOperation {
     
-    let isUnit: Bool
     public let machineName: String
     
     public init(withName name: String, andConfig config: MachineConfig, isUnit: Bool) {
-        let homeDirURL: URL
-        if #available(OSX 10.12, *) {
-            let fileManager = FileManager()
-            homeDirURL = fileManager.homeDirectoryForCurrentUser
-        } else {
-            homeDirURL = URL(fileURLWithPath: NSHomeDirectory())
-        }
-        self.isUnit = isUnit
         self.machineName = name
         super.init(
             commands: [
                 "docker-machine", "create"
-            ] + MachineArgument.argumentsList(for: config) + [ name ],
-            currentDirectory: homeDirURL)
-        self.name = "CreateMachineOperation(withName: \(name))"
-    }
-    
-    public override func main() {
-        if isCancelled {
+                ] + MachineArgument.argumentsList(for: config) + [ name ], isUnit: isUnit)
+    }    
+
+}
+
+func environmentVariables(forDockerMachineOutput output: String) -> [String: String] {
+    let trimSet = CharacterSet(charactersIn: "\"' \n")
+    return output.split(separator: "\n").reduce(into: [String: String](), { (result, line) in
+        let commands = line.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+        if commands.count < 2 || commands[0] != "export" {
             return
         }
-        if isUnit {
-            guard let commands = process.arguments else { return }
-            guard let data = commands.joined(separator: " ").data(using: .utf8) else { return }
-            let fileHandle = self.standardOutputPipe.fileHandleForWriting
-            fileHandle.write(data)
-            fileHandle.closeFile()
-            self.standardErrorPipe.fileHandleForWriting.closeFile()
-            
-            self.state = .finished
-        } else {
-            super.main()
+        let lineSeperated = commands[1].split(separator: "=", maxSplits: 1, omittingEmptySubsequences: true)
+        if lineSeperated.count <= 1 {
+            return
         }
-    }
-    
-    public override var terminationStatus: Int32 {
-        if isUnit {
-            return 0
+        let name = lineSeperated[0]
+        let value = lineSeperated[1].trimmingCharacters(in: trimSet)
+        if value.isEmpty {
+            return
         }
-        return super.terminationStatus
-    }
-
+        result[String(name)] = value
+    })
 }
 
 func currentDirectory(using: FileManager = FileManager.default) -> URL {

@@ -59,6 +59,32 @@ final class ClusterTests: XCTestCase {
             try Cluster(name: "test-cluster", initialSwarmManagers: 0, initialSwarmWorkers: 1, initialCephNodes: nil)
         )
     }
+    
+    func testGetEnvironmentVariablesForMachine() throws {
+        let testMachineOutput = """
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://52.213.189.59:2376"
+export DOCKER_CERT_PATH="/Users/robwithhair/.docker/machine/machines/flowmoco-cluster-1"
+export DOCKER_MACHINE_NAME="flowmoco-cluster-1"
+# Run this command to configure your shell:
+# eval $(docker-machine env flowmoco-cluster-1)
+
+"""
+        let expectedOut = [
+            "DOCKER_TLS_VERIFY": "1",
+            "DOCKER_HOST": "tcp://52.213.189.59:2376",
+            "DOCKER_CERT_PATH": "/Users/robwithhair/.docker/machine/machines/flowmoco-cluster-1",
+            "DOCKER_MACHINE_NAME": "flowmoco-cluster-1",
+        ]
+        let out = environmentVariables(forDockerMachineOutput: testMachineOutput)
+        XCTAssertEqual(out, expectedOut)
+    }
+    
+    func testEnvVarsOp() throws {
+        let op = MachineEnvironmentOperation(withName: "test-1", isUnit: true)
+        op.main()
+        XCTAssertEqual(op.standardOutput, "docker-machine env test-1")
+    }
 
 //    func testExample() {
 //        // This is an example of a functional test case.

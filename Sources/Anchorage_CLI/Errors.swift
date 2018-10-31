@@ -17,8 +17,10 @@ enum CLIError: Error {
     var localizedDescription: String {
         switch self {
         case .createMachineFailed(let status):
-            let message = NSLocalizedString("Some docker-machine commands exited with a non-zero exit status: %@", comment: "CLIErrorMessage createMachineFailed")
-            return String(format: message, String(status))
+            let message = NSLocalizedString("Some docker-machine commands exited with a non-zero exit status: %s", comment: "CLIErrorMessage createMachineFailed")
+            return String(status).withCString({ (s) -> String in
+                String(format: message, s)
+            })
         }
     }
 }
