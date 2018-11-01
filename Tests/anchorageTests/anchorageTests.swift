@@ -19,7 +19,7 @@ final class anchorageTests: XCTestCase {
         let opKeys = ["ls1", "ls2", "ls3"]
         let q = ProcessOperation.defaultQueue
         let ops: [ProcessOperation] = opKeys.reduce(into: [ProcessOperation]()) { (res, key) in
-            let ls = ProcessOperation(commands: ["ls"], currentDirectory: URL(fileURLWithPath: path))
+            let ls = ProcessOperation(commands: ["ls"], isUnit: false, currentDirectory: URL(fileURLWithPath: path))
             res.append(ls)
             q.addOperation(ls)
         }
@@ -33,14 +33,14 @@ final class anchorageTests: XCTestCase {
     
     func testRunningProcess() throws {
         let path = FileManager.default.currentDirectoryPath
-        let ls = ProcessOperation(commands: ["ls"], currentDirectory: URL(fileURLWithPath: path)).startAndWait()
+        let ls = ProcessOperation(commands: ["ls"], isUnit: false, currentDirectory: URL(fileURLWithPath: path)).startAndWait()
         XCTAssertEqual(ls.terminationStatus, 0)
-        let p1 = ProcessOperation(commands: ["dockerfds"], currentDirectory: URL(fileURLWithPath: path)).startAndWait()
+        let p1 = ProcessOperation(commands: ["dockerfds"], isUnit: false, currentDirectory: URL(fileURLWithPath: path)).startAndWait()
         XCTAssertEqual(p1.terminationStatus, 127)
         XCTAssertEqual(p1.standardOutput ?? "fail", "")
         XCTAssertEqual(p1.standardError ?? "", "env: dockerfds: No such file or directory\n")
         do {
-            let docker = ProcessOperation(commands: ["ls", "-D"], currentDirectory: URL(fileURLWithPath: path)).startAndWait()
+            let docker = ProcessOperation(commands: ["ls", "-D"], isUnit: false, currentDirectory: URL(fileURLWithPath: path)).startAndWait()
             let out = try docker.output()
             XCTAssertEqual(docker.terminationStatus, 1)
             XCTAssertEqual(docker.terminationReason, .exit)
@@ -64,6 +64,38 @@ final class anchorageTests: XCTestCase {
         XCTAssertEqual( try valid(identifier: "Flowmoco-Cluster-123"), "Flowmoco-Cluster-123")
         XCTAssertThrowsError( try valid(identifier: "test_not_work"))
     }
+    
+    func testMachineEnvironmentOperation() throws {
+        let op = MachineEnvironmentOperation(withName: "flowmoco-cluster-1", isUnit: false)
+        let tokensOp = GetSwarmJoinToken(envVarsOp: op, isUnit: false)
+        let queue = OperationQueue()
+        queue.addOperation(tokensOp)
+        queue.addOperation(op)
+        queue.waitUntilAllOperationsAreFinished()
+        
+        XCTAssertEqual(op.terminationStatus, 0)
+        XCTAssertEqual(op.standardError, "")
+        XCTAssertEqual(op.standardOutput, "")
+        
+        let expectedOut = ["DOCKER_CERT_PATH": "/Users/robwithhair/.docker/machine/machines/flowmoco-cluster-1", "DOCKER_MACHINE_NAME": "flowmoco-cluster-1", "DOCKER_HOST": "tcp://52.213.189.59:2376", "DOCKER_TLS_VERIFY": "1"]
+        expectedOut.forEach { (key, val) in
+            XCTAssertEqual(op.environmentVariables?[key], val)
+        }
+        XCTAssertEqual(tokensOp.managerJoinToken, nil)
+        XCTAssertEqual(tokensOp.standardOutput, "")
+        XCTAssertEqual(tokensOp.standardError, "")
+        if let count = tokensOp.managerJoinToken?.count {
+            XCTAssertTrue(count > 4)
+        } else {
+            XCTFail()
+        }
+        if let count = tokensOp.workerJoinToken?.count {
+            XCTAssertTrue(count > 4)
+        } else {
+            XCTFail()
+        }
+    }
+    
     
     func testExample() throws {
         // This is an example of a functional test case.
@@ -110,6 +142,7 @@ final class anchorageTests: XCTestCase {
         ("testRunningProcess", testRunningProcess),
         ("testDefaultConfigURL", testDefaultConfigURL),
         ("testMachineNames", testMachineNames),
+        ("testMachineEnvironmentOperation", testMachineEnvironmentOperation),
         ("testExample", testExample),
     ]
 }

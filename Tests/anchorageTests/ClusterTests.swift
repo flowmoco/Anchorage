@@ -77,7 +77,9 @@ export DOCKER_MACHINE_NAME="flowmoco-cluster-1"
             "DOCKER_MACHINE_NAME": "flowmoco-cluster-1",
         ]
         let out = environmentVariables(forDockerMachineOutput: testMachineOutput)
-        XCTAssertEqual(out, expectedOut)
+        expectedOut.forEach { (key, val) in
+            XCTAssertEqual(out[key], val)
+        }
     }
     
     func testEnvVarsOp() throws {

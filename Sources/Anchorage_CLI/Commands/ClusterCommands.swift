@@ -60,7 +60,7 @@ func createClusterCommand(for argumentParser: ArgumentParser) -> Command {
             
             // Create Manager Swarm
             let createSwarmOp: InitializeSwarm?
-            if createManagerOps.count > 1 {
+            if createManagerOps.count >= 1 {
                 let envVars = MachineEnvironmentOperation(withName: createManagerOps[0].machineName, isUnit: isUnitTest)
                 envVars.addDependency(createManagerOps[0])
                 queue.addOperation(envVars)
@@ -68,6 +68,8 @@ func createClusterCommand(for argumentParser: ArgumentParser) -> Command {
                 let createSwarm = InitializeSwarm(envVarsOp: envVars, advertiseAddress: nil, createMachineOp: createManagerOps[0], isUnit: isUnitTest)
                 queue.addOperation(createSwarm)
                 createSwarmOp = createSwarm
+                
+                
             } else {
                 createSwarmOp = nil
             }

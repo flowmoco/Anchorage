@@ -47,6 +47,7 @@ struct Machine: Encodable, Decodable {
         }
         return home.appendingPathComponent(".docker/machine/machines", isDirectory: true).appendingPathComponent(named, isDirectory: true).appendingPathComponent("config.json", isDirectory: false)
     }
+    
 }
 
 
@@ -157,7 +158,7 @@ public class CreateMachineOperation: ProcessOperation {
 
 func environmentVariables(forDockerMachineOutput output: String) -> [String: String] {
     let trimSet = CharacterSet(charactersIn: "\"' \n")
-    return output.split(separator: "\n").reduce(into: [String: String](), { (result, line) in
+    return output.split(separator: "\n").reduce(into: ProcessInfo.processInfo.environment, { (result, line) in
         let commands = line.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
         if commands.count < 2 || commands[0] != "export" {
             return
